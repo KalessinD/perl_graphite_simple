@@ -1,0 +1,26 @@
+Revision history for Perl extension Graphite::Simple
+
+0.07 2021 Nov 21
+    - adding special hash to collect invalid metrics
+    - fixing some segfaults in case of wrong argument types in "inc_bulk" method
+
+0.06 2021 Aug 02
+    - adding "meta_merge" into Makefile.PL
+
+0.05 2021 Aug 02
+    - adding META.* files into MANIFEST file
+    - adding "=head1 LICENSE"
+
+0.04 2021 Aug 02
+    - adding "Config" module into dependencies list
+
+0.03 2021 Jul 24
+    = adding some notes into POD
+    - adding META.yml and META.json
+    - getting rid of redundant std::move calls
+
+0.02  2021 Jun 8
+    - POD fixes
+
+0.01  2021 Jun 8
+    - Initial version

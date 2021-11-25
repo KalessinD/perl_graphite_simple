@@ -1,0 +1,13 @@
+MANIFEST.SKIP
+Changes
+lib/Graphite/Simple.pm
+LICENSE
+Makefile.PL
+MANIFEST
+META.json
+META.yml
+README
+README.md
+Simple.xs
+t/Graphite-Simple.t
+typemap
