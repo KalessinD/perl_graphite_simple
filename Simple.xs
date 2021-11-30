@@ -22,9 +22,16 @@
 #include <string_view>
 #include <netdb.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
+
+#ifdef WIN32
+#   include <windows.h>
+#   include <winsock2.h>
+#else
+#   include <netinet/in.h>
+#   include <arpa/inet.h>
+#   include <sys/types.h>
+#endif
+
 #include <time.h>
 #include <fcntl.h>
 
