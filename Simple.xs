@@ -335,7 +335,7 @@ inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     if (addr <= 0)
         croak("Neither host nor ip was given");
 
-    uint32_t port;
+    uint32_t port = 0;
 
     if ((entry = hv_fetch_ent(opts, sv_port_key, NULL, 0)) != NULL)
         port = (uint32_t) SvIVx(hv_iterval(opts, entry));
