@@ -1,6 +1,7 @@
 !Build/
 .last_cover_stats
 /MYMETA.*
+Simple.c
 *.o
 *.pm.tdy
 *.bs

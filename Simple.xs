@@ -22,6 +22,7 @@
 #include <string_view>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 
 #ifdef WIN32
 #   include <windows.h>
@@ -48,7 +49,7 @@ struct xs_state {
     SV* sender_name;
     SV* sock_path;
     uint32_t port;
-    int sockfd;
+    int sock_fd;
     sockaddr_in server_addr;
     bool is_enabled;
     bool is_connected;
@@ -360,7 +361,7 @@ inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
 
 inline void disconnect_ (GraphiteXS_Object* graphite) {
     if (graphite->is_connected)
-        close(graphite->sockfd);
+        close(graphite->sock_fd);
 }
 
 
@@ -401,7 +402,7 @@ CODE:
     self->sender_name = nullptr;
     self->hostname = nullptr;
     self->port = 0;
-    self->sockfd = 0;
+    self->sock_fd = 0;
 
     memset(&self->server_addr, 0, sizeof(sockaddr_in));
     apply_constructor_options_(self, opts);
@@ -415,21 +416,30 @@ void connect (GraphiteXS_Object *self)
 PPCODE:
 
     if (self->sock_path) {
-        if ((self->sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+        if ((self->sock_fd = socket(AF_LOCAL, SOCK_STREAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
             croak("Error: can't create socket");
+
+        struct sockaddr_un server_addr {AF_LOCAL};
+
+        //server_addr.sun_family = AF_LOCAL;
+        strcpy(server_addr.sun_path, SvPVX(self->sock_path));
+
+        if(connect(self->sock_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+            croak("Error: connection is failed to %s\n", SvPVX(self->sock_path));
     }
     else if (self->hostname && self->port) {
-
-        if((self->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+        if((self->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
             croak("Error: can't create socket");
 
-        if (fcntl(self->sockfd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
-
-        if(connect(self->sockfd, (struct sockaddr *) &self->server_addr, sizeof(self->server_addr)) < 0)
+        if(connect(self->sock_fd, (struct sockaddr *) &self->server_addr, sizeof(self->server_addr)) < 0)
             croak("Error: connection is failed to %s:%i\n", SvPVX(self->hostname), self->port);
 
         self->is_connected = true;
+    }
+
+    if (self->sock_fd) {
+        if (fcntl(self->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
+            croak("Error: can't set O_NONBLOCK flag");
     }
 
     mXPUSHi(self->is_connected ? 1 : 0);
@@ -499,7 +509,7 @@ PPCODE:
 
                 if (( len = data.length() ) >= MAX_CHUNK_SIZE) {
                     //warn("data:\n%s", data.c_str());
-                    if (send(self->sockfd, data.c_str(), move(len), send_flags) == -1)
+                    if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1)
                         is_success = 0;
                     data.clear();
                 }
@@ -507,7 +517,7 @@ PPCODE:
 
             if ((len = data.length()) > 0) { // if we have only one key, then "len" iz zero here
                 //warn("data:\n%s", data.c_str());
-                if (send(self->sockfd, data.c_str(), move(len), send_flags) == -1)
+                if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1)
                     is_success = 0;
                 data.clear();
             }
