@@ -60,7 +60,6 @@ struct xs_state {
 
 typedef struct xs_state GraphiteXS_Object;
 
-static SV* sock_path;
 static SV* sv_store_invalid_metrics_key;
 static SV* sv_use_global_storage_key;
 static SV* sv_sender_key;
