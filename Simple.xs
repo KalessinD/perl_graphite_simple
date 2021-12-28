@@ -50,7 +50,7 @@ struct xs_state {
     SV* sock_path;
     uint32_t port;
     int sock_fd;
-    sockaddr_in server_addr;
+    sockaddr_in sock_addr;
     bool is_enabled;
     bool is_connected;
     bool use_global_storage;
@@ -337,9 +337,9 @@ inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     if (!port)
         croak("No port number was given");
 
-    graphite->server_addr.sin_addr.s_addr = addr; //*(long *)(host->h_addr_list[0]);
-    graphite->server_addr.sin_port = htons(port);
-    graphite->server_addr.sin_family = AF_INET;
+    graphite->sock_addr.sin_addr.s_addr = addr; //*(long *)(host->h_addr_list[0]);
+    graphite->sock_addr.sin_port = htons(port);
+    graphite->sock_addr.sin_family = AF_INET;
     graphite->port = move(port);
 }
 
@@ -404,7 +404,7 @@ CODE:
     self->port = 0;
     self->sock_fd = 0;
 
-    memset(&self->server_addr, 0, sizeof(sockaddr_in));
+    memset(&self->sock_addr, 0, sizeof(sockaddr_in));
     apply_constructor_options_(self, opts);
 
     RETVAL = self;
@@ -419,19 +419,19 @@ PPCODE:
         if ((self->sock_fd = socket(AF_LOCAL, SOCK_STREAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
             croak("Error: can't create socket");
 
-        struct sockaddr_un server_addr {AF_LOCAL};
+        struct sockaddr_un sock_addr {AF_LOCAL};
 
-        //server_addr.sun_family = AF_LOCAL;
-        strcpy(server_addr.sun_path, SvPVX(self->sock_path));
+        // sock_addr.sun_family = AF_LOCAL;
+        strcpy(sock_addr.sun_path, SvPVX(self->sock_path));
 
-        if(connect(self->sock_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+        if(connect(self->sock_fd, (struct sockaddr *) &sock_addr, sizeof(sock_addr)) < 0)
             croak("Error: connection is failed to %s\n", SvPVX(self->sock_path));
     }
     else if (self->hostname && self->port) {
         if((self->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
             croak("Error: can't create socket");
 
-        if(connect(self->sock_fd, (struct sockaddr *) &self->server_addr, sizeof(self->server_addr)) < 0)
+        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr, sizeof(self->sock_addr)) < 0)
             croak("Error: connection is failed to %s:%i\n", SvPVX(self->hostname), self->port);
 
         self->is_connected = true;
