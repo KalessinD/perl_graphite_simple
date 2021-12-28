@@ -155,8 +155,8 @@ my %expected_flushed_metrics = (
     my ($fh, $filename) = File::Temp::tempfile('DIR' => $dir);
 
     my $graphite = Graphite::Simple->new({
-        'host' => 'localhost',
-        'port' => 2023,
+#        'host' => 'localhost',
+#        'port' => 2023,
         'path' => $filename,
         'project' => 'test',
         'enabled' => 1,

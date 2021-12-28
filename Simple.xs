@@ -298,24 +298,32 @@ inline void apply_sock_path_key_ (GraphiteXS_Object* graphite, HV* opts) {
 }
 
 inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
+
     // Initially we treat hostname as host, and only in case of failure we treat it as IP
     in_addr_t addr = 0;
-    char *hostname = nullptr;
     HE* entry = hv_fetch_ent(opts, sv_host_key, NULL, 0);
 
+    if (graphite->sock_path && entry != NULL)
+        croak("At once can be specified either 'path' or 'host' and 'port'.");
+
     if (entry != NULL) {
+
         struct hostent *host;
 
         graphite->hostname = move(HeVAL(entry));
-        hostname = SvPVX(graphite->hostname);
 
         SvREFCNT_inc_simple_void_NN(graphite->hostname);
+
+        char* hostname = SvPVX(graphite->hostname);
 
         if ((host = gethostbyname(hostname)) != NULL)
             addr = *(long *)(host->h_addr_list[0]);
         else if ( (addr = inet_addr(hostname)) < 0)
             croak("Invalid hostname '%s' was given", hostname);
     }
+
+    if (graphite->sock_path) // do nothing
+        return(void());
 
     if (addr <= 0)
         croak("Neither host nor ip was given");
@@ -406,9 +414,14 @@ OUTPUT:
 void connect (GraphiteXS_Object *self)
 PPCODE:
 
-    if (self->hostname && self->port) {
+    if (self->sock_path) {
+        if ((self->sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+            croak("Error: can't create socket");
+    }
+    else if (self->hostname && self->port) {
 
-        self->sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if((self->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+            croak("Error: can't create socket");
 
         if (fcntl(self->sockfd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
             croak("Error: can't set O_NONBLOCK flag");
