@@ -18,6 +18,7 @@
 #   include "mach/cthreads.h"
 #endif
 
+#include <errno.h>
 #include <string>
 #include <string_view>
 #include <netdb.h>
@@ -366,23 +367,23 @@ inline void connect_ (GraphiteXS_Object* graphite) {
 
     if (graphite->sock_path) {
         if ((graphite->sock_fd = socket(AF_LOCAL, SOCK_DGRAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
-            croak("Error: can't create socket");
+            croak("Error: can't create socket: %s\n", strerror(errno));
 
         if (fcntl(graphite->sock_fd, F_SETFL, O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
+            croak("Error: can't set O_NONBLOCK flag: %s\n", strerror(errno));
 
         if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_unix, sizeof(graphite->sock_addr_unix)) < 0)
-            croak("Error: connection is failed to %s\n", SvPVX(graphite->sock_path));
+            croak("Error: connection is failed to %s: %s\n", SvPVX(graphite->sock_path), strerror(errno));
     }
     else if (graphite->hostname && graphite->port) {
         if((graphite->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-            croak("Error: can't create socket");
+            croak("Error: can't create socket: %s\n", strerror(errno));
 
         if (fcntl(graphite->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
+            croak("Error: can't set O_NONBLOCK flag: %s\n", strerror(errno));
 
         if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_inet, sizeof(graphite->sock_addr_inet)) < 0)
-            croak("Error: connection is failed to %s:%i\n", SvPVX(graphite->hostname), graphite->port);
+            croak("Error: connection is failed to %s:%i: %s\n", SvPVX(graphite->hostname), graphite->port,  strerror(errno));
     }
 
     if (graphite->sock_fd)
@@ -456,7 +457,7 @@ PPCODE:
 IV reconnect (GraphiteXS_Object *self)
 PPCODE:
     disconnect_(self);
-    //connect_(self);
+    connect_(self);
     mXPUSHi(self->is_connected ? 1 : 0);
     XSRETURN(1);
 

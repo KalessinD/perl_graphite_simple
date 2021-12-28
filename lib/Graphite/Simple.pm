@@ -34,6 +34,8 @@ Graphite::Simple - Perl XS package provides methods to collect metrics and send 
 
   $graphite->connect();
 
+  $graphite->reconnect();
+
   $graphite->disconnect();
 
   my $bulk = $graphite->get_bulk_metrics();
@@ -155,6 +157,12 @@ Otherwise internal hashes will be used.
 =head2 $self->connect()
 
 Establishes the connection to Graphite server if C<enabled> was set as true.
+Returns 1 in case of success, otherwise returns 0.
+
+=head2 $self->reconnect()
+
+Reestablishes the connection to Graphite server.
+Returns 1 in case of success, otherwise returns 0.
 
 =head2 $self->disconnect()
 

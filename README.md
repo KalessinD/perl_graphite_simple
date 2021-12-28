@@ -10,6 +10,8 @@
 
       $graphite->connect();
 
+      $graphite->reconnect();
+
       $graphite->disconnect();
 
       my $bulk = $graphite->get_bulk_metrics();
@@ -122,8 +124,13 @@
         Otherwise internal hashes will be used.
 
 ####  $self->connect()
-    Establishes the connection to Graphite server if "enabled" was set as
-    true.
+    Establishes the connection to Graphite server if "enabled" was set as true.
+    Returns 1 in case of success, otherwise returns 0.
+
+####  $self->reconnect()
+
+    Reestablishes the connection to Graphite server.
+    Returns 1 in case of success, otherwise returns 0.
 
 ####  $self->disconnect()
     Closes the connection.
