@@ -41,11 +41,12 @@ struct xs_state {
     uint32_t invalid_key_counter;
     HV* bulk_hv;
     HV* avg_hv;
-    HV *invalid_hv;
+    HV* invalid_hv;
     REGEXP* block_re;
     SV* hostname;
     SV* global_prefix;
     SV* sender_name;
+    SV* sock_path;
     uint32_t port;
     int sockfd;
     sockaddr_in server_addr;
@@ -56,14 +57,16 @@ struct xs_state {
 
 typedef struct xs_state GraphiteXS_Object;
 
-static SV *sv_store_invalid_metrics_key;
-static SV *sv_use_global_storage_key;
-static SV *sv_sender_key;
-static SV *sv_block_re_key;
-static SV* host_key;
-static SV* port_key;
-static SV* enabled_key;
-static SV* prefix_key;
+static SV* sock_path;
+static SV* sv_store_invalid_metrics_key;
+static SV* sv_use_global_storage_key;
+static SV* sv_sender_key;
+static SV* sv_block_re_key;
+static SV* sv_sock_path_key;
+static SV* sv_host_key;
+static SV* sv_port_key;
+static SV* sv_enabled_key;
+static SV* sv_prefix_key;
 static uint32_t MAX_CHUNK_SIZE;
 
 inline void increment_hash_value_by ( HV* hv, SV* key, NV value ) {
@@ -256,11 +259,11 @@ inline void parse_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
     entry = hv_fetch_ent(opts, sv_block_re_key, NULL, 0);
 
     if (entry)
-           set_blocked_metrics_re_(graphite, hv_iterval(opts, entry));
+        set_blocked_metrics_re_(graphite, hv_iterval(opts, entry));
 
     bool is_enabled = 0;
 
-    if ((entry = hv_fetch_ent(opts, enabled_key, NULL, 0)) != NULL)
+    if ((entry = hv_fetch_ent(opts, sv_enabled_key, NULL, 0)) != NULL)
         is_enabled = SvNVx(hv_iterval(opts, entry)) ? 1 : 0; // by default: "enabled" => 0
 
     if (!is_enabled) // do nothing
@@ -268,7 +271,7 @@ inline void parse_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
 
     STRLEN prefix_len = 0;
 
-    if ((entry = hv_fetch_ent(opts, prefix_key, NULL, 0)) != NULL) {
+    if ((entry = hv_fetch_ent(opts, sv_prefix_key, NULL, 0)) != NULL) {
         graphite->global_prefix = move(HeVAL(entry));
         const char *prefix = SvPVX(graphite->global_prefix);
 
@@ -282,11 +285,17 @@ inline void parse_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
     if (!prefix_len)
         croak("You have to setup project name (global prefix)");
 
+    if ((entry = hv_fetch_ent(opts, sv_sock_path_key, NULL, 0)) != NULL) {
+        graphite->sock_path = move(HeVAL(entry));
+        if (! sv_len(graphite->sock_path))
+            croak("'path' can't be an empty string");
+    }
+
     // Initially we treat hostname as host, and only in case of failure we treat it as IP
     in_addr_t addr = 0;
     char *hostname = nullptr;
 
-    if ((entry = hv_fetch_ent(opts, host_key, NULL, 0)) != NULL) {
+    if ((entry = hv_fetch_ent(opts, sv_host_key, NULL, 0)) != NULL) {
         struct hostent *host;
 
         graphite->hostname = move(HeVAL(entry));
@@ -305,7 +314,7 @@ inline void parse_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
 
     uint32_t port;
 
-    if ((entry = hv_fetch_ent(opts, port_key, NULL, 0)) != NULL)
+    if ((entry = hv_fetch_ent(opts, sv_port_key, NULL, 0)) != NULL)
         port = (uint32_t) SvIVx(hv_iterval(opts, entry));
 
     if (!port)
@@ -335,10 +344,11 @@ BOOT:
     sv_use_global_storage_key = move(newSVpv("use_common_storage", strlen("use_global_storage")));
     sv_sender_key   = move(newSVpv("sender_name", strlen("sender_name")));
     sv_block_re_key = move(newSVpv("block_metrics_re", strlen("block_metrics_re")));
-    host_key = move(newSVpv("host", strlen("host")));
-    port_key = move(newSVpv("port", strlen("port")));
-    enabled_key = move(newSVpv("enabled", strlen("enabled")));
-    prefix_key = move(newSVpv("project", strlen("project")));
+    sv_sock_path_key = move(newSVpv("path", strlen("path")));
+    sv_host_key = move(newSVpv("host", strlen("host")));
+    sv_port_key = move(newSVpv("port", strlen("port")));
+    sv_enabled_key = move(newSVpv("enabled", strlen("enabled")));
+    sv_prefix_key = move(newSVpv("project", strlen("project")));
     MAX_CHUNK_SIZE = 1460;
 }
 
@@ -356,6 +366,7 @@ CODE:
     self->use_global_storage = false;
     self->store_invalid_metrics = false;
     self->global_prefix = nullptr;
+    self->sock_path = nullptr;
     self->sender_name = nullptr;
     self->hostname = nullptr;
     self->port = 0;

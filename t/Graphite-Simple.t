@@ -147,6 +147,23 @@ my %expected_flushed_metrics = (
     };
 }
 
+{ # just to test unix_sock in construtor
+
+    require File::Temp;
+
+    my $dir = File::Temp::tempdir('CLEANUP' => 1);
+    my ($fh, $filename) = File::Temp::tempfile('DIR' => $dir);
+
+    my $graphite = Graphite::Simple->new({
+        'host' => 'localhost',
+        'port' => 2023,
+        'path' => '', #$filename,
+        'project' => 'test',
+        'enabled' => 1,
+    });
+
+}
+
 my $graphite = Graphite::Simple->new({
     'sender_name' => 'Graphite::Sender::receiver_ok',
     'block_metrics_re' => qr/initial\.block/,
