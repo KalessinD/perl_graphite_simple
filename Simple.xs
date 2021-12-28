@@ -50,11 +50,12 @@ struct xs_state {
     SV* sock_path;
     uint32_t port;
     int sock_fd;
-    sockaddr_in sock_addr;
     bool is_enabled;
     bool is_connected;
     bool use_global_storage;
     bool store_invalid_metrics;
+    sockaddr_in sock_addr_inet;
+    sockaddr_un sock_addr_unix;
 };
 
 typedef struct xs_state GraphiteXS_Object;
@@ -292,9 +293,14 @@ inline void apply_prefix_key_ (GraphiteXS_Object* graphite, HV* opts) {
 inline void apply_sock_path_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_sock_path_key, NULL, 0);
     if (entry != NULL) {
+
         graphite->sock_path = move(HeVAL(entry));
-        if (! sv_len(graphite->sock_path))
+
+        if (!sv_len(graphite->sock_path))
             croak("'path' can't be an empty string");
+
+        graphite->sock_addr_unix.sun_family = AF_LOCAL;
+        strcpy(graphite->sock_addr_unix.sun_path, SvPVX(graphite->sock_path));
     }
 }
 
@@ -337,9 +343,9 @@ inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     if (!port)
         croak("No port number was given");
 
-    graphite->sock_addr.sin_addr.s_addr = addr; //*(long *)(host->h_addr_list[0]);
-    graphite->sock_addr.sin_port = htons(port);
-    graphite->sock_addr.sin_family = AF_INET;
+    graphite->sock_addr_inet.sin_addr.s_addr = addr; //*(long *)(host->h_addr_list[0]);
+    graphite->sock_addr_inet.sin_port = htons(port);
+    graphite->sock_addr_inet.sin_family = AF_INET;
     graphite->port = move(port);
 }
 
@@ -404,7 +410,8 @@ CODE:
     self->port = 0;
     self->sock_fd = 0;
 
-    memset(&self->sock_addr, 0, sizeof(sockaddr_in));
+    memset(&self->sock_addr_unix, 0, sizeof(sockaddr_un));
+    memset(&self->sock_addr_inet, 0, sizeof(sockaddr_in));
     apply_constructor_options_(self, opts);
 
     RETVAL = self;
@@ -419,27 +426,23 @@ PPCODE:
         if ((self->sock_fd = socket(AF_LOCAL, SOCK_STREAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
             croak("Error: can't create socket");
 
-        struct sockaddr_un sock_addr {AF_LOCAL};
+        if (fcntl(self->sock_fd, F_SETFL, O_CLOEXEC) == -1)
+            croak("Error: can't set O_NONBLOCK flag");
 
-        // sock_addr.sun_family = AF_LOCAL;
-        strcpy(sock_addr.sun_path, SvPVX(self->sock_path));
-
-        if(connect(self->sock_fd, (struct sockaddr *) &sock_addr, sizeof(sock_addr)) < 0)
+        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr_unix, sizeof(self->sock_addr_unix)) < 0)
             croak("Error: connection is failed to %s\n", SvPVX(self->sock_path));
     }
     else if (self->hostname && self->port) {
         if((self->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
             croak("Error: can't create socket");
 
-        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr, sizeof(self->sock_addr)) < 0)
+        if (fcntl(self->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
+            croak("Error: can't set O_NONBLOCK flag");
+
+        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr_inet, sizeof(self->sock_addr_inet)) < 0)
             croak("Error: connection is failed to %s:%i\n", SvPVX(self->hostname), self->port);
 
         self->is_connected = true;
-    }
-
-    if (self->sock_fd) {
-        if (fcntl(self->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
     }
 
     mXPUSHi(self->is_connected ? 1 : 0);
