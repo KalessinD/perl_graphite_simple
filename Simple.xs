@@ -219,13 +219,13 @@ void calculate_result_metrics_ (GraphiteXS_Object* graphite) {
     }
 }
 
-inline void parse_store_invalid_metrics_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_store_invalid_metrics_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_store_invalid_metrics_key, NULL, 0);
     if (entry)
         graphite->store_invalid_metrics = SvIVx(hv_iterval(opts, entry)) ? true : false;
 }
 
-inline void parse_sender_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_sender_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = entry = hv_fetch_ent(opts, sv_sender_key, NULL, 0);
     if (entry) {
         graphite->sender_name = move(HeVAL(entry));
@@ -241,7 +241,7 @@ inline void parse_sender_key_ (GraphiteXS_Object* graphite, HV* opts) {
     }
 }
 
-inline void parse_use_global_storage_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_use_global_storage_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_use_global_storage_key, NULL, 0);
     if (entry)
         graphite->use_global_storage = SvIVx(hv_iterval(opts, entry)) ? true : false;
@@ -257,19 +257,19 @@ inline void parse_use_global_storage_key_ (GraphiteXS_Object* graphite, HV* opts
     }
 }
 
-inline void parse_block_re_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_block_re_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_block_re_key, NULL, 0);
     if (entry)
         set_blocked_metrics_re_(graphite, hv_iterval(opts, entry));
 }
 
-inline void parse_enabled_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_enabled_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_enabled_key, NULL, 0);
     if (entry != NULL)
         graphite->is_enabled = SvNVx(hv_iterval(opts, entry)) ? true : false; // by default: "enabled" => false
 }
 
-inline void parse_prefix_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_prefix_key_ (GraphiteXS_Object* graphite, HV* opts) {
     STRLEN prefix_len = 0;
     HE* entry = hv_fetch_ent(opts, sv_prefix_key, NULL, 0);
 
@@ -288,7 +288,7 @@ inline void parse_prefix_key_ (GraphiteXS_Object* graphite, HV* opts) {
         croak("You have to setup project name (global prefix)");
 }
 
-inline void parse_sock_path_key_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_sock_path_key_ (GraphiteXS_Object* graphite, HV* opts) {
     HE* entry = hv_fetch_ent(opts, sv_sock_path_key, NULL, 0);
     if (entry != NULL) {
         graphite->sock_path = move(HeVAL(entry));
@@ -297,7 +297,7 @@ inline void parse_sock_path_key_ (GraphiteXS_Object* graphite, HV* opts) {
     }
 }
 
-inline void parse_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     // Initially we treat hostname as host, and only in case of failure we treat it as IP
     in_addr_t addr = 0;
     char *hostname = nullptr;
@@ -334,18 +334,18 @@ inline void parse_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     graphite->port = move(port);
 }
 
-inline void parse_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
+inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
 
-    parse_store_invalid_metrics_key_(graphite, opts);
-    parse_sender_key_(graphite, opts);
-    parse_use_global_storage_key_(graphite, opts);
-    parse_block_re_key_(graphite, opts);
-    parse_enabled_key_(graphite, opts);
+    apply_store_invalid_metrics_key_(graphite, opts);
+    apply_sender_key_(graphite, opts);
+    apply_use_global_storage_key_(graphite, opts);
+    apply_block_re_key_(graphite, opts);
+    apply_enabled_key_(graphite, opts);
 
     if (graphite->is_enabled) {
-        parse_prefix_key_(graphite, opts);
-        parse_sock_path_key_(graphite, opts);
-        parse_host_and_port_keys_(graphite, opts);
+        apply_prefix_key_(graphite, opts);
+        apply_sock_path_key_(graphite, opts);
+        apply_host_and_port_keys_(graphite, opts);
     }
 }
 
@@ -396,7 +396,7 @@ CODE:
     self->sockfd = 0;
 
     memset(&self->server_addr, 0, sizeof(sockaddr_in));
-    parse_constructor_options_(self, opts);
+    apply_constructor_options_(self, opts);
 
     RETVAL = self;
 OUTPUT:
