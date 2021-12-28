@@ -157,7 +157,7 @@ my %expected_flushed_metrics = (
     my $graphite = Graphite::Simple->new({
         'host' => 'localhost',
         'port' => 2023,
-        'path' => '', #$filename,
+        'path' => $filename,
         'project' => 'test',
         'enabled' => 1,
     });
