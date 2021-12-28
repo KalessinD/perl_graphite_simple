@@ -345,8 +345,9 @@ no_leaks_ok {
         'enabled' => 1,
     });
 
+    eval { my $s = $g->connect(); }; # connection refused
+
     $g->incr_bulk("avg.my.new.key", 2);
-    $g->reconnect();
     $g->disconnect();
     $g->clear_bulk();
 };
