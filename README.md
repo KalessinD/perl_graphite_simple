@@ -10,6 +10,8 @@
 
       $graphite->connect();
 
+      $graphite->reconnect();
+
       $graphite->disconnect();
 
       my $bulk = $graphite->get_bulk_metrics();
@@ -124,6 +126,10 @@
 ####  $self->connect()
     Establishes the connection to Graphite server if "enabled" was set as
     true.
+
+####  $self->reconnect()
+
+    Reestablishes the connection to Graphite server.
 
 ####  $self->disconnect()
     Closes the connection.
