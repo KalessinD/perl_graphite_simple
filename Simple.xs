@@ -335,18 +335,15 @@ inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     if (addr <= 0)
         croak("Neither host nor ip was given");
 
-    uint32_t port = 0;
-
     if ((entry = hv_fetch_ent(opts, sv_port_key, NULL, 0)) != NULL)
-        port = (uint32_t) SvIVx(hv_iterval(opts, entry));
+        graphite->port = (uint32_t) SvIVx(hv_iterval(opts, entry));
 
-    if (!port)
+    if (!graphite->port)
         croak("No port number was given");
 
     graphite->sock_addr_inet.sin_addr.s_addr = addr; //*(long *)(host->h_addr_list[0]);
-    graphite->sock_addr_inet.sin_port = htons(port);
+    graphite->sock_addr_inet.sin_port = htons(graphite->port);
     graphite->sock_addr_inet.sin_family = AF_INET;
-    graphite->port = move(port);
 }
 
 inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
