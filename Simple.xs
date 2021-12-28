@@ -420,7 +420,7 @@ void connect (GraphiteXS_Object *self)
 PPCODE:
 
     if (self->sock_path) {
-        if ((self->sock_fd = socket(AF_LOCAL, SOCK_STREAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
+        if ((self->sock_fd = socket(AF_LOCAL, SOCK_DGRAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
             croak("Error: can't create socket");
 
         if (fcntl(self->sock_fd, F_SETFL, O_CLOEXEC) == -1)

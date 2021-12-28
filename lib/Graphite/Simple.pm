@@ -93,6 +93,11 @@ If value is 0, then it will be still possible to collect mertrics in internal or
 But you won't allowed to send them to Graphite server via native C<send_bulk> method.
 In this case you can use C<send_bulk_delegate> method to do this work by other code.
 
+=item path
+
+Sets the path to the Unix socket file.
+Either C<path> or C<host>/C<port> can be used.
+
 =item host
 
 Sets the hostname or IPv4 address of Graphite server.

@@ -65,6 +65,11 @@
         Graphite server via native "send_bulk" method. In this case you can use
         "send_bulk_delegate" method to do this work by other code.
 
+#####    path
+
+        Sets the path to the Unix socket file.
+        Either "path" or "host"/"port" can be used.
+
 #####    host
         Sets the hostname or IPv4 address of Graphite server. This option is
         mandatory if "enabled" is true.
