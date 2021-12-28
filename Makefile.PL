@@ -12,6 +12,7 @@ WriteMakefile(
     MIN_PERL_VERSION  => 5.026001,
     PREREQ_PM         => {
         'XSLoader'        => 0.27,
+        'Test::Kwalitee'  => 1.27,
         'Test::More'      => 1.302183,
         'Test::Deep'      => 1.130,
         'Test::LeakTrace' => 0.14,
@@ -34,6 +35,7 @@ WriteMakefile(
     LIBS              => [''], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
     INC               => '', # e.g., '-I/usr/include/other'
+    test => {TESTS => 't/*.t xt/release/*.t'},
 );
 
 1;

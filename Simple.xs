@@ -360,10 +360,41 @@ inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
     }
 }
 
+inline void connect_ (GraphiteXS_Object* graphite) {
+    if (graphite->is_connected)
+        return(void());
+
+    if (graphite->sock_path) {
+        if ((graphite->sock_fd = socket(AF_LOCAL, SOCK_DGRAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
+            croak("Error: can't create socket");
+
+        if (fcntl(graphite->sock_fd, F_SETFL, O_CLOEXEC) == -1)
+            croak("Error: can't set O_NONBLOCK flag");
+
+        if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_unix, sizeof(graphite->sock_addr_unix)) < 0)
+            croak("Error: connection is failed to %s\n", SvPVX(graphite->sock_path));
+    }
+    else if (graphite->hostname && graphite->port) {
+        if((graphite->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
+            croak("Error: can't create socket");
+
+        if (fcntl(graphite->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
+            croak("Error: can't set O_NONBLOCK flag");
+
+        if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_inet, sizeof(graphite->sock_addr_inet)) < 0)
+            croak("Error: connection is failed to %s:%i\n", SvPVX(graphite->hostname), graphite->port);
+    }
+
+    if (graphite->sock_fd)
+        graphite->is_connected = true;
+}
 
 inline void disconnect_ (GraphiteXS_Object* graphite) {
-    if (graphite->is_connected)
+    if (graphite->is_connected) {
         close(graphite->sock_fd);
+        graphite->is_connected = false;
+        graphite->sock_fd = 0;
+    }
 }
 
 
@@ -415,33 +446,17 @@ OUTPUT:
     RETVAL
 
 
-void connect (GraphiteXS_Object *self)
+IV connect (GraphiteXS_Object *self)
 PPCODE:
+    connect_(self);
+    mXPUSHi(self->is_connected ? 1 : 0);
+    XSRETURN(1);
 
-    if (self->sock_path) {
-        if ((self->sock_fd = socket(AF_LOCAL, SOCK_DGRAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
-            croak("Error: can't create socket");
 
-        if (fcntl(self->sock_fd, F_SETFL, O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
-
-        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr_unix, sizeof(self->sock_addr_unix)) < 0)
-            croak("Error: connection is failed to %s\n", SvPVX(self->sock_path));
-    }
-    else if (self->hostname && self->port) {
-        if((self->sock_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
-            croak("Error: can't create socket");
-
-        if (fcntl(self->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag");
-
-        if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr_inet, sizeof(self->sock_addr_inet)) < 0)
-            croak("Error: connection is failed to %s:%i\n", SvPVX(self->hostname), self->port);
-    }
-
-    if (self->sock_fd)
-        self->is_connected = true;
-
+IV reconnect (GraphiteXS_Object *self)
+PPCODE:
+    disconnect_(self);
+    //connect_(self);
     mXPUSHi(self->is_connected ? 1 : 0);
     XSRETURN(1);
 
@@ -736,7 +751,9 @@ PPCODE:
         SvREFCNT_dec_NN(self->global_prefix);
     if (self->hostname) // sv_clear
         SvREFCNT_dec_NN(self->hostname);
-    while (self->block_re && SvREFCNT(self->block_re))
+    if (self->sock_path && SvREFCNT(self->sock_path)) // sv_clear
+        SvREFCNT_dec_NN(self->sock_path);
+    if (self->block_re && SvREFCNT(self->block_re))
         SvREFCNT_dec_NN(self->block_re);
     if (!self->use_global_storage) {
         if (self->bulk_hv) // hv_undef

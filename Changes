@@ -1,5 +1,9 @@
 Revision history for Perl extension Graphite::Simple
 
+0.10  2021 Jan 28
+    - adding reconnect method
+    - fix possible memory leaks issue made in v0.09
+
 0.09  2021 Jan 28
     - adding support of local (Unix) sockets
     - some XS refactoring

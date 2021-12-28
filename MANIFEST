@@ -11,3 +11,4 @@ README.md
 Simple.xs
 t/Graphite-Simple.t
 typemap
+xt/release/kwalitee.t

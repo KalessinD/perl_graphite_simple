@@ -10,7 +10,7 @@
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : 2
+      "version" : "2"
    },
    "name" : "Graphite-Simple",
    "no_index" : {
@@ -33,7 +33,9 @@
       "runtime" : {
          "requires" : {
             "Config" : "0",
-            "Test::Deep" : "1.130",
+            "File::Temp" : "0.2304",
+            "Test::Deep" : "1.13",
+            "Test::Kwalitee" : "1.27",
             "Test::LeakTrace" : "0.14",
             "Test::More" : "1.302183",
             "XSLoader" : "0.27",
@@ -50,6 +52,6 @@
          "url" : "https://github.com/KalessinD/perl_graphite_simple"
       }
    },
-   "version" : "0.08",
-   "x_serialization_backend" : "JSON::PP version 4.05"
+   "version" : "0.10",
+   "x_serialization_backend" : "JSON::PP version 2.27400_02"
 }
