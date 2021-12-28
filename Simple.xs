@@ -441,9 +441,10 @@ PPCODE:
 
         if(connect(self->sock_fd, (struct sockaddr *) &self->sock_addr_inet, sizeof(self->sock_addr_inet)) < 0)
             croak("Error: connection is failed to %s:%i\n", SvPVX(self->hostname), self->port);
-
-        self->is_connected = true;
     }
+
+    if (self->sock_fd)
+        self->is_connected = true;
 
     mXPUSHi(self->is_connected ? 1 : 0);
     XSRETURN(1);
