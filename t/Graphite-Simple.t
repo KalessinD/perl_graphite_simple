@@ -55,7 +55,7 @@ BEGIN { use_ok('Graphite::Simple') };
 
 Graphite::Simple->import(qw/ :all /);
 
-my ($fh, $tmp_file_sock) = tempfile('DIR' => tempdir('CLEANUP' => 1));
+my ($fh, $tmp_file_sock) = tempfile('DIR' => tempdir('CLEANUP' => 1), 'UNLINK' => 1);
 
 my %expected_bulk_metrics = (
     'wrong.avg.my.new.key' => 2,
