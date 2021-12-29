@@ -51,6 +51,7 @@ struct xs_state {
     SV* sock_path;
     uint32_t port;
     int sock_fd;
+    bool is_sock_stream;
     bool is_enabled;
     bool is_connected;
     bool use_global_storage;
@@ -61,6 +62,7 @@ struct xs_state {
 
 typedef struct xs_state GraphiteXS_Object;
 
+static SV* sv_use_sock_stream_key;
 static SV* sv_store_invalid_metrics_key;
 static SV* sv_use_global_storage_key;
 static SV* sv_sender_key;
@@ -346,6 +348,12 @@ inline void apply_host_and_port_keys_ (GraphiteXS_Object* graphite, HV* opts) {
     graphite->sock_addr_inet.sin_family = AF_INET;
 }
 
+inline void apply_use_sock_stream_key_ (GraphiteXS_Object* graphite, HV* opts) {
+    HE* entry = hv_fetch_ent(opts, sv_use_sock_stream_key, NULL, 0);
+    if (entry)
+        graphite->is_sock_stream = SvIVx(hv_iterval(opts, entry)) ? true : false;
+}
+
 inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
 
     apply_store_invalid_metrics_key_(graphite, opts);
@@ -358,6 +366,7 @@ inline void apply_constructor_options_ (GraphiteXS_Object* graphite, HV* opts) {
         apply_prefix_key_(graphite, opts);
         apply_sock_path_key_(graphite, opts);
         apply_host_and_port_keys_(graphite, opts);
+        apply_use_sock_stream_key_(graphite, opts);
     }
 }
 
@@ -366,11 +375,12 @@ inline void connect_ (GraphiteXS_Object* graphite) {
         return(void());
 
     if (graphite->sock_path) {
-        if ((graphite->sock_fd = socket(AF_LOCAL, SOCK_DGRAM, 0)) == -1) // AF_UNIX -> AF_LOCAL
+        // AF_UNIX -> AF_LOCAL
+        if ((graphite->sock_fd = socket(AF_LOCAL, graphite->is_sock_stream ? SOCK_STREAM : SOCK_DGRAM, 0)) == -1)
             croak("Error: can't create socket: %s\n", strerror(errno));
 
         if (fcntl(graphite->sock_fd, F_SETFL, O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag: %s\n", strerror(errno));
+            croak("Error: can't set socket flags: %s\n", strerror(errno));
 
         if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_unix, sizeof(graphite->sock_addr_unix)) < 0)
             croak("Error: connection is failed to %s: %s\n", SvPVX(graphite->sock_path), strerror(errno));
@@ -380,7 +390,7 @@ inline void connect_ (GraphiteXS_Object* graphite) {
             croak("Error: can't create socket: %s\n", strerror(errno));
 
         if (fcntl(graphite->sock_fd, F_SETFL, O_NONBLOCK | O_ASYNC | O_CLOEXEC) == -1)
-            croak("Error: can't set O_NONBLOCK flag: %s\n", strerror(errno));
+            croak("Error: can't set socket flags: %s\n", strerror(errno));
 
         if(connect(graphite->sock_fd, (struct sockaddr *) &graphite->sock_addr_inet, sizeof(graphite->sock_addr_inet)) < 0)
             croak("Error: connection is failed to %s:%i: %s\n", SvPVX(graphite->hostname), graphite->port,  strerror(errno));
@@ -405,6 +415,7 @@ PROTOTYPES: DISABLE
 
 BOOT:
 {
+    sv_use_sock_stream_key = move(newSVpv("use_sock_stream", strlen("use_sock_stream")));
     sv_store_invalid_metrics_key = move(newSVpv("store_invalid_metrics", strlen("store_invalid_metrics")));
     sv_use_global_storage_key = move(newSVpv("use_common_storage", strlen("use_global_storage")));
     sv_sender_key   = move(newSVpv("sender_name", strlen("sender_name")));
@@ -429,6 +440,7 @@ CODE:
     self->block_re = NULL;
     self->is_enabled = false;
     self->is_connected = false;
+    self->is_sock_stream = false;
     self->use_global_storage = false;
     self->store_invalid_metrics = false;
     self->global_prefix = nullptr;
@@ -764,11 +776,11 @@ PPCODE:
     GraphiteXS_Object *self = (GraphiteXS_Object *) SvUV(SvRV(ST(0)));
     if (PL_dirty) // global destruction
         return;
-    if (self->sender_name) // sv_clear
+    if (self->sender_name && SvREFCNT(self->sender_name)) // sv_clear
         SvREFCNT_dec_NN(self->sender_name);
-    if (self->global_prefix) // sv_clear
+    if (self->global_prefix && SvREFCNT(self->global_prefix)) // sv_clear
         SvREFCNT_dec_NN(self->global_prefix);
-    if (self->hostname) // sv_clear
+    if (self->hostname && SvREFCNT(self->hostname)) // sv_clear
         SvREFCNT_dec_NN(self->hostname);
     if (self->sock_path && SvREFCNT(self->sock_path)) // sv_clear
         SvREFCNT_dec_NN(self->sock_path);

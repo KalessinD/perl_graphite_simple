@@ -102,10 +102,19 @@ In this case you can use C<send_bulk_delegate> method to do this work by other c
 Sets the path to the Unix socket file.
 Either C<path> or C<host>/C<port> can be used.
 
+=item use_stream_sock
+
+By default value is false.
+
+If true, then enables SOCK_STREAM for Unix Socks.
+Otherwise SOCK_DGRAM (UDP) will be used.
+
 =item host
 
 Sets the hostname or IPv4 address of Graphite server.
 This option is mandatory if C<enabled> is true.
+
+In this case SOCK_DGRAM (UDP) will be used.
 
 =item port
 

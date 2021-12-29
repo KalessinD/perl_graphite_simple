@@ -74,9 +74,18 @@
         Sets the path to the Unix socket file.
         Either "path" or "host"/"port" can be used.
 
+#####    use_stream_sock
+
+        By default value is false.
+
+        If true, then enables SOCK_STREAM for Unix Socks.
+        Otherwise SOCK_DGRAM (UDP) will be used.
+
 #####    host
         Sets the hostname or IPv4 address of Graphite server. This option is
         mandatory if "enabled" is true.
+
+        In this case SOCK_DGRAM (UDP) will be used.
 
 #####    port
         Sets the port number of Graphite server. This option is mandatory if

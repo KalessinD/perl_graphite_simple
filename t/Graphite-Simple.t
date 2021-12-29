@@ -342,6 +342,23 @@ no_leaks_ok {
 no_leaks_ok {
     my $g = Graphite::Simple->new({
         'path' => $tmp_file_sock,
+        'use_stream_sock' => 0,
+        'project' => 'test',
+        'enabled' => 1,
+    });
+
+    eval { my $s = $g->connect(); }; # connection refused
+
+    $g->incr_bulk("avg.my.new.key", 2);
+    $g->disconnect();
+    $g->is_connected();
+    $g->clear_bulk();
+};
+
+no_leaks_ok {
+    my $g = Graphite::Simple->new({
+        'path' => $tmp_file_sock,
+        'use_stream_sock' => 1,
         'project' => 'test',
         'enabled' => 1,
     });
