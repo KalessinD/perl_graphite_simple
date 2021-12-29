@@ -447,6 +447,12 @@ OUTPUT:
     RETVAL
 
 
+IV is_connected (GraphiteXS_Object *self)
+PPCODE:
+    mXPUSHi(self->is_connected ? 1 : 0);
+    XSRETURN(1);
+
+
 IV connect (GraphiteXS_Object *self)
 PPCODE:
     connect_(self);
@@ -525,16 +531,28 @@ PPCODE:
 
                 if (( len = data.length() ) >= MAX_CHUNK_SIZE) {
                     //warn("data:\n%s", data.c_str());
-                    if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1)
+                    if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1) {
+                        if (self->sock_path) {
+                            disconnect_(self);
+                            data.clear();
+                            croak("Error: can't send. %s\n", strerror(errno));
+                        }
                         is_success = 0;
+                    }
                     data.clear();
                 }
             }
 
             if ((len = data.length()) > 0) { // if we have only one key, then "len" iz zero here
                 //warn("data:\n%s", data.c_str());
-                if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1)
+                if (send(self->sock_fd, data.c_str(), move(len), send_flags) == -1) {
+                    if (self->sock_path) {
+                        disconnect_(self);
+                        data.clear();
+                        croak("Error: can't send. %s\n", strerror(errno));
+                    }
                     is_success = 0;
+                }
                 data.clear();
             }
         }

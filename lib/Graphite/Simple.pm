@@ -9,7 +9,7 @@ our %EXPORT_TAGS = ( 'all' => [ ] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw();
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 our %avg_counters;
 our %bulk;
@@ -37,6 +37,8 @@ Graphite::Simple - Perl XS package provides methods to collect metrics and send 
   $graphite->reconnect();
 
   $graphite->disconnect();
+
+  $graphite->is_connected();
 
   my $bulk = $graphite->get_bulk_metrics();
 
@@ -167,6 +169,11 @@ Returns 1 in case of success, otherwise returns 0.
 =head2 $self->disconnect()
 
 Closes the connection.
+
+=head2 $self->is_connected()
+
+Returns 1 or 0.
+It returns 0 only in cases if C<connected> isn't invoked or Unix Sock connection is broken.
 
 =head2 $self->send_bulk_delegate()
 

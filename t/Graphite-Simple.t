@@ -333,6 +333,7 @@ no_leaks_ok {
     my $s = $g->connect();
     $r = $g->send_bulk();
 
+    $g->is_connected();
     $g->reconnect();
     $g->disconnect();
     $g->clear_bulk();
@@ -349,6 +350,7 @@ no_leaks_ok {
 
     $g->incr_bulk("avg.my.new.key", 2);
     $g->disconnect();
+    $g->is_connected();
     $g->clear_bulk();
 };
 

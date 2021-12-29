@@ -1,7 +1,10 @@
 Revision history for Perl extension Graphite::Simple
 
+0.11  2021 Jan 29
+    - adding the "is_connected" method
+
 0.10  2021 Jan 28
-    - adding reconnect method
+    - adding the "reconnect" method
     - fix possible memory leaks issue made in v0.09
 
 0.09  2021 Jan 28

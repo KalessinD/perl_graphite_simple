@@ -14,6 +14,8 @@
 
       $graphite->disconnect();
 
+      $graphite->is_connected();
+
       my $bulk = $graphite->get_bulk_metrics();
 
       my $status = $graphite->send_bulk();
@@ -134,6 +136,11 @@
 
 ####  $self->disconnect()
     Closes the connection.
+
+####  $self->is_connected()
+
+    Returns 1 or 0.
+    It returns 0 only in cases if "connected" isn't invoked or Unix Sock connection is broken.
 
 ####  $self->send_bulk_delegate()
     Calculates the result metrics and passes them to specified method in
